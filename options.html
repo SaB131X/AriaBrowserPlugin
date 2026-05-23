@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 400px;
+      padding: 20px;
+      font-family: system-ui, sans-serif;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0052a3;
+    }
+    .status {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 4px;
+    }
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    hr {
+      margin: 15px 0;
+    }
+    .note {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
+  <title>Aria2 Extension Settings</title>
+</head>
+<body>
+  <h3>Aria2 RPC Settings</h3>
+
+  <div class="form-group">
+    <label>RPC URL</label>
+    <input type="text" id="rpcUrl" placeholder="http://localhost:6800/jsonrpc">
+    <div class="note">By Default: http://localhost:6800/jsonrpc</div>
+  </div>
+
+  <div class="form-group">
+    <label>RPC Secret (token)</label>
+    <input type="password" id="rpcSecret" placeholder="Your rpc-secret from aria2.conf">
+    <div class="note">Leave empty if None</div>
+  </div>
+
+  <button id="saveBtn">Save</button>
+
+  <hr>
+  <h4>How to install aria2 (list of Packet Managers commands)</h4>
+  <pre style="background:#f4f4f4;padding:10px;border-radius:4px;overflow-x:auto">
+winget install -e --id aria2.aria2
+sudo pacman -S aria2
+sudo apt update && sudo apt install aria2
+sudo dnf install aria2
+sudo zypper install aria2
+sudo apk add aria2
+</pre>
+
+  <h4>How to launch aria2 with RPC</h4>
+  <pre style="background:#f4f4f4;padding:10px;border-radius:4px;overflow-x:auto">
+aria2c --enable-rpc --rpc-listen-port=6800 --rpc-secret=YourSecretToken -D</pre>
+
+  <h4>Recomended aria2 daemon config</h4>
+  <pre style="background:#f4f4f4;padding:10px;border-radius:4px;overflow-x:auto">
+enable-rpc=true
+rpc-allow-origin-all=true
+rpc-listen-all=false
+rpc-listen-port=6800
+rpc-secret=YourKey
+continue=true
+max-concurrent-downloads=3
+split=8
+max-connection-per-server=8
+dir=E:\aria2
+input-file=E:\aria2\sesFiles\aria2.session
+save-session=E:\aria2\sesFiles\aria2.session
+save-session-interval=60</pre>
+
+  <h4>How to launch aria2 with your config</h4>
+  <pre style="background:#f4f4f4;padding:10px;border-radius:4px;overflow-x:auto">
+aria2c --conf-path="C:/Users/User1/.aria2/aria2.conf" -D</pre>
+  <div id="status"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>

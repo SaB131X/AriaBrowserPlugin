@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Aria2 Downloader",
+  "version": "1.0",
+  "description": "Download links via aria2 RPC server",
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "notifications"
+  ],
+  "host_permissions": [
+    "http://localhost:6800/*",
+    "http://127.0.0.1:6800/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

@@ -25,7 +25,15 @@
   save-session=E:\aria2\sesFiles\aria2.session # system session file location
   save-session-interval=60
 ```
+### How to Use
+  Make sure that you setted up everything in the plugin settings and started Aria2 RPC server.<br>
+  Then just right click on desired link and press "Download with Aria2".<br>
+  After that you'll get a system notification (from windows or linux).<br>
+  If everythings right you'll get a notification with short URL and GID.<br>
+  If there's an error (server unreachable or wrong password) and:<br>
+  1. You're using Chrome based browser (Chrome, Opera, etc) you'll get an option to click on the button that opens plugin settings or use the second option<br>
+  2. You're using Firefox or Edge you should click on the notification itself instead (because these two browsers don't support buttons).<br>That option is supported by all the browsers so you can use it instead of buttons on Chrome.
 ### Known Issues
-  If theres no secret key or RPC server adress stated in extension config but there's some in aria2 config download won't start and you won't get an error (that happens because aria RPC server expects you to send that data)
+  If theres no secret key or RPC server adress stated in extension config but there's some in aria2 config download won't start (that happens because aria RPC server expects you to send that data)
 ### License
   It's an open source project, you can use it for anything except for commercial distribution and AI training. Also you can create a fork if you want but please add at least something from yourself.

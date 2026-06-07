@@ -51,32 +51,60 @@ async function sendToAria2(url) {
     } else {
       payload.params.push([url]);
     }
+
+    //Controller used to abort request if no response in 5s 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     // Fetch the Payload
     const response = await fetch(rpcConfig.baseUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
+    
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Response Body Extraction
+      let errorDetail = '';
+      try {
+        const errorBody = await response.text();
+        errorDetail = errorBody.substring(0, 100);
+      } catch(e) {
+        errorDetail = 'No additional details';
+      }
+      
+      // Wrong Secret
+      if (response.status === 400) {
+        throw new Error('HTTP_400_UNAUTHORIZED');
+      } else {
+        throw new Error(`HTTP_${response.status}`);
+      }
     }
 
     const data = await response.json();
-
+    
     if (data.error) {
-      throw new Error(`RPC error ${data.error.code}: ${data.error.message}`);
+      // code 1 in aria2 = Unauthorized
+      if (data.error.code === 1) {
+        throw new Error('RPC_UNAUTHORIZED');
+      } else {
+        throw new Error(`RPC_ERROR_${data.error.code}: ${data.error.message}`);
+      }
     }
 
     // Success Notif
-    chrome.notifications?.create({
-      type: 'basic',
-      iconUrl: 'icon48.png',
-      title: 'Aria2 Downloader',
-      message: `Task Created: ${url.substring(0, 60)}${url.length > 60 ? '...' : ''}`
-    });
+    const shortUrl = url.length > 50 ? url.substring(0, 47) + '...' : url;
+    showNotification(
+      '✅ Aria2 Browser Plugin', 
+      `Download started. \nURL: ${shortUrl} \nGID: ${data.result}`,
+      false,
+      5000
+    );
 
     console.log(`Download started with GID: ${data.result}`);
 
@@ -84,22 +112,115 @@ async function sendToAria2(url) {
     // Error Notifs
     console.error('Failed to send to aria2:', error);
 
-    let userMessage = '';
-    if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
-      userMessage = 'CORS Error: Launch aria2 with --rpc-allow-origin-all (or add rpc-allow-origin-all=true in aria2.conf)';
-    } else {
-      userMessage = `Error: ${error.message}`;
-    }
-
-    chrome.notifications?.create({
-      type: 'basic',
-      iconUrl: 'icon48.png',
-      title: 'Aria2 Error',
-      message: userMessage
-    });
+    const errorMessage = error.message || String(error);
     
+    // Wrong Secret
+    if (errorMessage.includes('UNAUTHORIZED') || 
+        errorMessage.includes('HTTP_400')) {
+      showNotification(
+        '🔐 Aria2: Wrong Password',
+        'The RPC Secret in extension settings does not match the one in aria2.conf',
+        true,
+        15000
+      );
+    }
+    // No RPC Server
+    else if (errorMessage.includes('Failed to fetch') ||
+             errorMessage.includes('NetworkError') ||
+             errorMessage.includes('aborted') ||
+             errorMessage.includes('TypeError') ||
+             errorMessage.includes('HTTP_500') ||
+             errorMessage.includes('HTTP_502') ||
+             errorMessage.includes('HTTP_503') ||
+             errorMessage.includes('HTTP_504')) {
+      showNotification(
+        '🔌 Aria2: Server Unreachable',
+        `Cannot connect to aria2 RPC server at:\n${rpcConfig.baseUrl}`,
+        true,
+        15000
+      );
+    }
+    // CORS Error
+    else if (errorMessage.includes('CORS')) {
+      showNotification(
+        '🌐 Aria2: CORS Error',
+        'Add "rpc-allow-origin-all=true" to your aria2.conf file and restart aria2',
+        true,
+        15000
+      );
+    }
+    // General Error
+    else {
+      showNotification(
+        '⚠️ Aria2: Unknown Error',
+        `Something went wrong:\n${errorMessage}`,
+        true,
+        15000
+      );
+    }
   }
 }
+
+function showNotification(title, message, isError = false) {
+  const notificationId = `aria2-${Date.now()}`;
+  const notificationsAPI = chrome.notifications || browser?.notifications;
+  const isFirefox = navigator.userAgent.includes('Firefox') || typeof InstallTrigger !== 'undefined';
+
+  // Custom Browser Engine
+  if (!notificationsAPI) {
+    console.log(`${title}: ${message}`);
+    return;
+  }
+
+  // General MSG (checks for firefox notif API)
+  if (isFirefox) {
+    chrome.notifications.create(notificationId, {
+      type: 'basic',
+      iconUrl: 'icon48.png',
+      title: title,
+      message: message.substring(0, 200)
+    });
+  }
+  else{
+    notificationsAPI.create(notificationId, {
+      type: 'basic',
+      iconUrl: 'icon48.png',
+      title: title,
+      message: message.substring(0, 200),
+      buttons: isError ? [{ title: 'Open Settings' }] : undefined,
+      requireInteraction: true
+    });
+  }
+
+  // Set MSG life timeout
+  setTimeout(() => {
+    try {
+      notificationsAPI.clear(notificationId, () => {
+        if (chrome.runtime.lastError) {
+          console.log('Cannot clear notification in Chrome MV3, will auto-expire naturally');
+        }
+      });
+    } catch(e) {
+    }
+  }, isError ? 15000 : 5000);
+
+  // Click on button
+  notificationsAPI.onButtonClicked?.addListener((clickedId, buttonIndex) => {
+    if (clickedId === notificationId && buttonIndex === 0) {
+      chrome.runtime.openOptionsPage();
+    }
+  });
+  
+  // Click on notification(itself), useful for firefox
+  notificationsAPI.onClicked?.addListener((clickedId) => {
+    if (clickedId === notificationId) {
+      chrome.runtime.openOptionsPage();
+    }
+  });
+  
+  return notificationId;
+}
+
 // Config Update Event
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'config-updated') {

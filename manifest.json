@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Aria2 Browser Plugin",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Adds a context menu to download links via aria2 RPC server",
     "browser_specific_settings": {
         "gecko": {
@@ -26,7 +26,7 @@
     },
     "options_ui": {
         "page": "options.html",
-        "open_in_tab": false
+        "open_in_tab": true
     },
     "icons": {
         "48": "icon48.png",
